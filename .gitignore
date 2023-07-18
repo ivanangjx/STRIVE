@@ -1,8 +1,15 @@
 .vscode
 strive_env
 out
+server_out
 wandb
 data/nuscenes
+
+#ivan
+singularity-ce-3.11.0
+server_out
+singularity-ce-3.11.0.tar.gz
+strive.sif
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
