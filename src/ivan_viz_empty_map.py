@@ -56,7 +56,7 @@ def viz_scenario(scene, map_env, out_path,
                 L=720,
                 W=720,
                 video=False):
-    viz_out_path = out_path + '/' + out_path.split('/')[-1]
+    viz_out_path = out_path 
 
     viz_out_path_after  = out_path + '/after/' + out_path.split('/')[-1]
     viz_out_path_before = out_path + '/before/' + out_path.split('/')[-1]
@@ -109,9 +109,9 @@ def viz_scenario(scene, map_env, out_path,
 
     scene_traj = torch.cat([scene_past, scene_fut], dim=1) # ivan- combine past and future scenes
 
-    print('scene_traj -----------------------------------------------------------')
+    # print('scene_traj -----------------------------------------------------------')
     # print(scene_traj)
-    print('scene_traj -----------------------------------------------------------'+'\n')
+    # print('scene_traj -----------------------------------------------------------'+'\n')
 
 
     NA, NT, _ = scene_traj.size()
@@ -137,59 +137,48 @@ def viz_scenario(scene, map_env, out_path,
                                             W=W)
     crop_traj = crop_traj.reshape(NA, NT, 4)
 
+    nutils.viz_map_crop(map_rend, viz_out_path + '.png',
+                        crop_traj,
+                        crop_lw,
+                        viz_traj=True,
+                        traj_markers=[False]*NA, #ivan-initially this is false # change marker color 1 color to rainbow color
+                        indiv=False
+                        )
+    # if video:
+    #     nutils.viz_map_crop_video(map_rend, viz_out_path_after + '_vid',
+    #                             crop_traj,
+    #                             crop_lw,
+    #                             viz_traj=False,
+    #                             indiv=False
+    #                             )
 
-    
+    # # Reapeat for initial traj as well
+    # scene_traj_init = torch.cat([scene_past, ivan_scene_fut_init], dim=1)
 
-    # nutils.ivan_out_map_json(map_rend, viz_out_path_after + '.json',
+    # # transform trajectory into this cropped frame
+    # crop_traj, crop_lw = map_env.objs2crop(crop_kin[0],
+    #                                         scene_traj_init.reshape(NA*NT, 4),
+    #                                         lw,
+    #                                         None,
+    #                                         bounds=bounds,
+    #                                         L=L,
+    #                                         W=W)
+    # crop_traj = crop_traj.reshape(NA, NT, 4)
+
+    # nutils.viz_map_crop(map_rend, viz_out_path_before + '_before.png',
     #                     crop_traj,
     #                     crop_lw,
     #                     viz_traj=True,
-    #                     traj_markers=[False]*NA,
+    #                     traj_markers=[False]*NA, #ivan-initially this is false # change marker color 1 color to rainbow color
     #                     indiv=False
     #                     )
-
-    nutils.viz_map_crop(map_rend, viz_out_path_after + '.png',
-                        crop_traj,
-                        crop_lw,
-                        viz_traj=True,
-                        traj_markers=[False]*NA, #ivan-initially this is false # change marker color 1 color to rainbow color
-                        indiv=False
-                        )
-    if video:
-        nutils.viz_map_crop_video(map_rend, viz_out_path_after + '_vid',
-                                crop_traj,
-                                crop_lw,
-                                viz_traj=False,
-                                indiv=False
-                                )
-
-    # Reapeat for initial traj as well
-    scene_traj_init = torch.cat([scene_past, ivan_scene_fut_init], dim=1)
-
-    # transform trajectory into this cropped frame
-    crop_traj, crop_lw = map_env.objs2crop(crop_kin[0],
-                                            scene_traj_init.reshape(NA*NT, 4),
-                                            lw,
-                                            None,
-                                            bounds=bounds,
-                                            L=L,
-                                            W=W)
-    crop_traj = crop_traj.reshape(NA, NT, 4)
-
-    nutils.viz_map_crop(map_rend, viz_out_path_before + '_before.png',
-                        crop_traj,
-                        crop_lw,
-                        viz_traj=True,
-                        traj_markers=[False]*NA, #ivan-initially this is false # change marker color 1 color to rainbow color
-                        indiv=False
-                        )
-    if video:
-        nutils.viz_map_crop_video(map_rend, viz_out_path_before + '_before_vid',
-                                crop_traj,
-                                crop_lw,
-                                viz_traj=False,
-                                indiv=False
-                                )
+    # if video:
+    #     nutils.viz_map_crop_video(map_rend, viz_out_path_before + '_before_vid',
+    #                             crop_traj,
+    #                             crop_lw,
+    #                             viz_traj=False,
+    #                             indiv=False
+    #                             )
 
 
 
@@ -203,7 +192,7 @@ def viz_scenario_dir(cfg):
     mkdir(out_path)
 
     scenes = read_adv_scenes(scenario_dir)
-    print('Loaded:')
+    print('LOADED SCENES: ')
     print([s['name'] for s in scenes])
 
     # create map envrionment for visualization

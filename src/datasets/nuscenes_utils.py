@@ -596,6 +596,19 @@ def viz_scene_graph(scene_graph, map_idx, map_env, bidx, out_path,
         if show_gt_idx is not None:
             gt_crop_objs = gt_crop_objs[show_gt_idx:show_gt_idx+1] 
 
+    #out json
+
+    
+    ivan_out_map_json(map_crop.cpu(), out_path + '.png',
+                    crop_objs.cpu(),
+                    crop_lw.cpu(),
+                    gt_kin=gt_crop_objs,
+                    viz_traj=viz_traj,
+                    indiv=False,
+                    color_traj=traj_color_val,
+                    color_traj_bounds=traj_color_bounds,
+                    car_colors=car_colors)
+
     # viz image
     viz_map_crop(map_crop.cpu(), out_path + '.png',
                     crop_objs.cpu(),
@@ -626,8 +639,8 @@ def create_video(img_path_form, out_path, fps):
     Saves in out_path.
     '''
     import subprocess
-    subprocess.run(['ffmpeg', '-y', '-r', str(fps), '-i', img_path_form,
-                    '-vcodec', 'libx264', '-crf', '18', '-pix_fmt', 'yuv420p', out_path])
+    subprocess.run(['/usr/bin/ffmpeg', '-y', '-r', str(fps), '-i', img_path_form,
+                    '-vcodec', 'libx264', '-crf', ' 18', '-pix_fmt', 'yuv420p', out_path])
 
 def viz_map_crop_video(x, outdir, car_kin=None, car_lw=None, viz_traj=False, indiv=True,
                         car_colors=None, car_alpha=None, fps=2):
@@ -650,9 +663,140 @@ def viz_map_crop_video(x, outdir, car_kin=None, car_lw=None, viz_traj=False, ind
                         viz_traj=viz_traj, indiv=indiv, car_colors=car_colors,
                         car_alpha=car_alpha)
         create_video(os.path.join(cur_outdir, 'frame%04d.png'), cur_outdir + '.mp4', fps)
-        shutil.rmtree(cur_outdir)
+        # shutil.rmtree(cur_outdir)
 
 def viz_map_crop(x, out_path, car_kin=None, car_lw=None, gt_kin=None, viz_traj=False, indiv=True,
+                 color_traj=None, color_traj_bounds=None, car_colors=None, car_alpha=None, traj_linewidth=None,
+                 traj_markers=None, traj_markersize=None):
+    '''
+    :param x: cropped rasterized layers (N, H, W)
+    :param car_kin: kinematics (NA x T x 4) or (NA x NS x T x 4)
+    :param car_lw: attributes length, width (NA x 2)
+    '''
+
+    print(x.shape[2])
+    print(x.shape[1])
+
+
+    def style_ax():
+        plt.grid(b=None)
+        plt.xticks([])
+        plt.yticks([])
+
+    if not indiv:
+        print('NOT INDI')
+        # fig = plt.figure(figsize=(6,6))
+        fig = plt.figure(dpi=200)
+    else:
+        print('INDI')
+        fig = plt.figure(figsize=(6*(x.shape[0]+1), 6))
+        gs = mpl.gridspec.GridSpec(1, x.shape[0]+1)
+
+        for i in range(x.shape[0]):
+            plt.subplot(gs[0, i])
+            # transpose because Map crops are pulled out from the base map in a transposed manner...
+            plt.imshow(x[i].T, origin='lower', vmin=0, vmax=1)
+
+        plt.subplot(gs[0, i+1])
+
+
+    temp_out = out_path.replace('.png', '_1.png')
+
+
+    render_map_observation(x)
+
+
+    if gt_kin is not None and car_lw is not None:
+        gt_car_colors = ['white']*gt_kin.size(0)
+        render_obj_observation(gt_kin, car_lw, viz_traj=viz_traj, viz_init_car=False, color=gt_car_colors)
+    if car_kin is not None and car_lw is not None:
+        render_obj_observation(car_kin, car_lw, viz_traj=viz_traj,
+                            color_traj=color_traj, color_traj_bounds=color_traj_bounds,
+                            color=car_colors,
+                            alpha=car_alpha,
+                            traj_linewidth=traj_linewidth,
+                            traj_markers=traj_markers,
+                            traj_markersize=traj_markersize)
+
+
+    style_ax()
+    plt.xlim(0, x.shape[2])
+    plt.ylim(0, x.shape[1])
+    plt.tight_layout()
+    print('saving', out_path)
+    plt.savefig(out_path, bbox_inches='tight',pad_inches = 0)
+    plt.close(fig)
+
+
+
+def ivan_out_map_json(x, out_path, car_kin=None, car_lw=None, gt_kin=None, viz_traj=False, indiv=True, # kin = kinematics
+                 color_traj=None, color_traj_bounds=None, car_colors=None, car_alpha=None, traj_linewidth=None,
+                 traj_markers=None, traj_markersize=None):
+    '''
+    :param x: cropped rasterized layers (N, H, W)
+    :param car_kin: kinematics (NA x T x 4) or (NA x NS x T x 4)
+    :param car_lw: attributes length, width (NA x 2)
+    '''
+
+    return_list = []
+
+    if gt_kin is not None and car_lw is not None:
+        print('RENDER 1')
+        gt_car_colors = ['white']*gt_kin.size(0)
+        return_list = ivan_get_image_pos_json(gt_kin, car_lw, viz_traj=viz_traj, viz_init_car=False, color=gt_car_colors)
+
+    if car_kin is not None and car_lw is not None:
+        print('RENDER 2')
+        return_list = ivan_get_image_pos_json(car_kin, car_lw, viz_traj=viz_traj,
+                            color_traj=color_traj, color_traj_bounds=color_traj_bounds,
+                            color=car_colors,
+                            alpha=car_alpha,
+                            traj_linewidth=traj_linewidth,
+                            traj_markers=traj_markers,
+                            traj_markersize=traj_markersize)
+
+
+    # print(end_list)
+
+
+    # for i in return_list:
+    #     print(i)
+    #     print('')
+
+    print('Writing Json file >>> ' + out_path) # out path is already json name
+
+    f = open(out_path, "w")
+    f.write("{\n")
+
+    for i in range(len(return_list)):
+        index = str(i)
+        f.write("    \"" + index + "\"" + ":"  + "\n")
+        f.write("    " + "[" + "\n")
+
+        for j in range(len(return_list[i])):
+
+            if(j < len(return_list[i])-1):
+                f.write("       " + "[ " + str(return_list[i][j][0]) + " , " + str(return_list[i][j][1]) + " , " + str(return_list[i][j][2]) + " , " + str(return_list[i][j][3])  + " ]" +  " ,\n")
+            else:
+                f.write("       " + "[ " + str(return_list[i][j][0]) + " , " + str(return_list[i][j][1]) + " , " + str(return_list[i][j][2]) + " , " + str(return_list[i][j][3])  + " ]" +  "\n")
+
+
+        if(i < len(return_list)-1):
+            f.write("    ],\n")
+        else:
+            f.write("    ]\n")
+
+        f.write("\n")   
+
+
+
+    f.write("}\n")
+
+    f.close()
+
+
+
+def ivan_viz_empty_map_crop(x, out_path, car_kin=None, car_lw=None, gt_kin=None, viz_traj=False, indiv=True, # kin = kinematics
                  color_traj=None, color_traj_bounds=None, car_colors=None, car_alpha=None, traj_linewidth=None,
                  traj_markers=None, traj_markersize=None):
     '''
@@ -680,17 +824,19 @@ def viz_map_crop(x, out_path, car_kin=None, car_lw=None, gt_kin=None, viz_traj=F
         plt.subplot(gs[0, i+1])
 
     render_map_observation(x)
-    if gt_kin is not None and car_lw is not None:
-        gt_car_colors = ['white']*gt_kin.size(0)
-        render_obj_observation(gt_kin, car_lw, viz_traj=viz_traj, viz_init_car=False, color=gt_car_colors)
-    if car_kin is not None and car_lw is not None:
-        render_obj_observation(car_kin, car_lw, viz_traj=viz_traj,
-                            color_traj=color_traj, color_traj_bounds=color_traj_bounds,
-                            color=car_colors,
-                            alpha=car_alpha,
-                            traj_linewidth=traj_linewidth,
-                            traj_markers=traj_markers,
-                            traj_markersize=traj_markersize)
+
+    # if gt_kin is not None and car_lw is not None:
+    #     gt_car_colors = ['white']*gt_kin.size(0)
+
+    #     render_obj_observation(gt_kin, car_lw, viz_traj=viz_traj, viz_init_car=False, color=gt_car_colors)
+    # if car_kin is not None and car_lw is not None:
+    #     render_obj_observation(car_kin, car_lw, viz_traj=viz_traj,
+    #                         color_traj=color_traj, color_traj_bounds=color_traj_bounds,
+    #                         color=car_colors,
+    #                         alpha=car_alpha,
+    #                         traj_linewidth=traj_linewidth,
+    #                         traj_markers=traj_markers,
+    #                         traj_markersize=traj_markersize)
 
 
     style_ax()
@@ -729,6 +875,116 @@ def render_map_observation(x):
         c = mpl.colors.to_rgba(pltcolor)[:3]
         showimg = make_rgba(x[i].T*map_alpha_list[i], c)
         plt.imshow(showimg, origin='lower')
+
+
+
+
+def ivan_get_image_pos_json(car_kin, car_lw, viz_traj=False, viz_init_car=True, color=None,
+                            color_traj=None, color_traj_bounds=None,
+                            alpha=None, traj_linewidth=None, traj_markers=None, traj_markersize=None):
+    traj_cmap = 'gist_rainbow'
+
+
+    use_color_traj = color_traj is not None and color_traj_bounds is not None
+    if use_color_traj:
+        color_traj_cmap = mpl.cm.get_cmap('plasma')
+        color_traj_norm = mpl.colors.Normalize(vmin=color_traj_bounds[0], vmax=color_traj_bounds[1])
+    if car_kin is not None and car_lw is not None:
+        if viz_traj:
+            if traj_markers is None:
+                traj_markers = [True]*car_kin.size(0)
+            
+            # only show position trajectories
+            if len(car_kin.size()) == 3:
+                NA, T, _ = car_kin.size()
+                for n in range(NA):
+                    cur_traj = car_kin[n]
+                    val_steps = torch.sum(torch.isnan(cur_traj), dim=1) == 0
+                    cur_traj = cur_traj[val_steps]
+                    carr = np.linspace(0, 1.0, T)[val_steps]
+                    NT = cur_traj.size(0)
+                    cur_alph = alpha[n] if alpha is not None else 0.7
+                    cur_linewidth = traj_linewidth[n] if traj_linewidth is not None else 1.0
+                    cur_msize = traj_markersize[n] if traj_markersize is not None else 8.0
+                    if cur_traj.size(0) > 0:
+                        cur_col = color[n] if color is not None else plt_color(n % 9)
+                        plt.plot(cur_traj[:, 0], cur_traj[:, 1], '-', c=cur_col, alpha=cur_alph, linewidth=cur_linewidth)
+                    if traj_markers[n]:
+                        plt.scatter(cur_traj[:, 0], cur_traj[:, 1], c=carr, s=cur_msize, norm=mpl.colors.Normalize(0.0, 1.0),
+                                    cmap=traj_cmap, alpha=cur_alph)
+                    else:
+                        cur_col = color[n] if color is not None else plt_color(n % 9)
+                        plt.scatter(cur_traj[:, 0], cur_traj[:, 1], c=cur_col, s=cur_msize, alpha=cur_alph)
+
+                        # print('0')
+                        # print(cur_traj[:, 0])
+                        # print('1')
+                        # print(cur_traj[:, 1])
+
+
+
+
+            elif len(car_kin.size()) == 4:
+                NA, NS, T, _ = car_kin.size()
+                for n in range(NA):
+                    for s in range(NS):
+                        cur_traj = car_kin[n, s]
+                        val_steps = torch.sum(torch.isnan(cur_traj), dim=1) == 0
+                        cur_traj = cur_traj[val_steps]
+                        carr = np.linspace(0, 1.0, T)[val_steps]
+                        NT = cur_traj.size(0)
+                        cur_alph = alpha[n] if alpha is not None else 0.7
+                        cur_linewidth = traj_linewidth[n] if traj_linewidth is not None else 1.0
+                        cur_msize = traj_markersize[n] if traj_markersize is not None else 8.0
+                        if cur_traj.size(0) > 0:
+                            if use_color_traj:
+                                cur_col = color_traj_cmap(color_traj_norm(color_traj[n, s].cpu().item()))
+                            else:
+                                cur_col = color[n] if color is not None else plt_color(n % 9)
+                            plt.plot(cur_traj[:, 0], cur_traj[:, 1], '-', c=cur_col, alpha=cur_alph, linewidth=cur_linewidth)
+                        if not use_color_traj and traj_markers[n]:
+                            plt.scatter(cur_traj[:, 0], cur_traj[:, 1], c=carr, s=cur_msize, norm=mpl.colors.Normalize(0.0, 1.0), 
+                                        cmap=traj_cmap, alpha=cur_alph)
+                        elif not use_color_traj:
+                            cur_col = color[n] if color is not None else plt_color(n % 9)
+                            plt.scatter(cur_traj[:, 0], cur_traj[:, 1], c=cur_col, s=cur_msize, alpha=cur_alph)
+
+
+                        # print('0')
+                        # print(cur_traj[:, 0])
+                        # print('1')
+                        # print(cur_traj[:, 1])
+
+            total_veh_list = []
+
+            if len(car_kin.size()) == 3:
+                NA, T, _ = car_kin.size()
+                single_veh_list = []
+                for n in range(NA):
+                    cur_traj = car_kin[n]
+                    val_steps = torch.sum(torch.isnan(cur_traj), dim=1) == 0
+                    cur_traj = cur_traj[val_steps]
+                    single_veh_list = cur_traj.tolist()
+                    total_veh_list.append(single_veh_list)
+
+
+            elif len(car_kin.size()) == 4:
+                NA, NS, T, _ = car_kin.size()
+                for s in range(NS):
+                    for s in range(NS):
+                        cur_traj = car_kin[n, s]
+                        val_steps = torch.sum(torch.isnan(cur_traj), dim=1) == 0
+                        cur_traj = cur_traj[val_steps]
+                        # print(cur_traj)
+                        single_veh_list = cur_traj.tolist()
+                        total_veh_list.append(single_veh_list)
+
+
+
+    return total_veh_list
+
+
+
 
 def render_obj_observation(car_kin, car_lw, viz_traj=False, viz_init_car=True, color=None,
                             color_traj=None, color_traj_bounds=None,

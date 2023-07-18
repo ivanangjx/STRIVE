@@ -39,7 +39,7 @@ def get_prediction_challenge_split(split, dataroot):
     :param dataroot: Path to the nuScenes dataset.
     :return: List of tokens belonging to the split. Format {instance_token}_{sample_token}.
     '''
-    if split not in {'mini_train', 'mini_val', 'train', 'train_val', 'val'}:
+    if split not in {'mini_train', 'mini_val', 'train', 'train_val', 'val', 'test'}:
         raise ValueError("split must be one of (mini_train, mini_val, train, train_val, val)")
     
     if split == 'train_val':
@@ -187,8 +187,15 @@ class NuScenesDataset(Dataset):
         self.seq_map = []
         self.scene2map = {}
         if self.use_nusc:
+
+            print('calling self.get_scenes() using split:  ' + self.split + ' ****************************************************************')
+
             # list of scene names in this split
             self.scenes, self.pred_challenge_scenes = self.get_scenes()
+
+            print(self.scenes)
+            print(self.pred_challenge_scenes)
+
             # maps {scene_name -> map_name}
             self.scene2map = self.get_scene2map()
             # load in all the data from these scenes
@@ -207,6 +214,8 @@ class NuScenesDataset(Dataset):
 
         print('Num scenes: %d' % (len(self.data)))
         print('Num subseq: %d' % (self.data_len))
+
+        # print(self.data) # ivan- print data-not same format as json
 
         # build normalization info objects
         # state normalizer. states of (x, y, hx, hy, s, hdot)
@@ -290,6 +299,7 @@ class NuScenesDataset(Dataset):
         return scene2info, seq_map, scene2map
 
     def get_scenes(self):
+        print('ivan-use_challenge_splits: ' + str(self.use_challenge_splits))
         # filter by scene split
         # use val for testing and split up train for validation
         cur_split = {
@@ -332,9 +342,10 @@ class NuScenesDataset(Dataset):
         if self.use_challenge_splits:
             from nuscenes.prediction import PredictHelper
             chall_split_map = {
-                'train' : 'train',
-                'val' : 'train_val',
-                'test' : 'val'
+                # 'val' : 'train_val',
+                # 'test' : 'val'
+                'val' : 'val',
+                'test' : 'test'
             }
             pred_challenge_scenes, scenes, split_data = get_prediction_challenge_split(chall_split_map[self.split], dataroot=self.data_path)
 
@@ -410,6 +421,9 @@ class NuScenesDataset(Dataset):
                     't': rec['timestamp'],
                     'samp_tok' : samp_token
                 })
+
+            # if scene == 'scene-0103':
+            #     print(scene2data['scene-0103']['ego']['traj'])
 
         return self.post_process(scene2data)
 

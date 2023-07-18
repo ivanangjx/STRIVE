@@ -117,6 +117,7 @@ def run_one_epoch(data_loader, batch_size, model, map_env, device, out_path, los
                   num_iters=300,
                   lr=0.05,
                   viz=True,
+                  scene_names = [],
                   save=True,
                   adv_attack_with=None
                   ):
@@ -134,6 +135,9 @@ def run_one_epoch(data_loader, batch_size, model, map_env, device, out_path, los
         gen_out_path_scenes = os.path.join(gen_out_path, 'scenario_results')
         mkdir(gen_out_path_scenes)
 
+    print("IVAN-TEST")
+    print(scene_names)
+
     data_idx = 0
     empty_cache = False
     batch_i = []
@@ -144,6 +148,7 @@ def run_one_epoch(data_loader, batch_size, model, map_env, device, out_path, los
         start_t = time.time()
         sample_pred = None
         scene_graph, map_idx = data
+        # import pdb; pdb.set_trace()
         if empty_cache:
             empty_cache = False
             gc.collect()
@@ -154,6 +159,11 @@ def run_one_epoch(data_loader, batch_size, model, map_env, device, out_path, los
             print('scene_%d' % (i))
             print(scene_graph)
             print([map_env.map_list[map_idx[b]] for b in range(map_idx.size(0))])
+
+            
+            # scene_name = scene_names[i] if i < len(scene_names) else "scene-wrong"
+            scene_name = scene_names[i]
+
             is_last_batch = i == (len(data_loader)-1)
 
             # First sample prior to get possible futures
@@ -496,18 +506,19 @@ def run_one_epoch(data_loader, batch_size, model, map_env, device, out_path, los
                                                           internal_ego_traj=final_decoder_out['future_pred'][scene_graph.ptr[b]].detach()
                                                           )
 
-                    fout_path = os.path.join(cur_scene_out_path, 'scene_%04d.json' % cur_batch_i[b])
+                    fout_path = os.path.join(cur_scene_out_path, scene_name + ".json")
                     Logger.log('Saving scene to %s' % (fout_path))
                     with open(fout_path, 'w') as writer:
                         json.dump(scene_out_dict, writer)
 
                 if viz:
-                    cur_viz_out_path = os.path.join(gen_out_path_viz, result_dir)
+                    cur_viz_out_path = os.path.join(gen_out_path_viz, result_dir, scene_name)
                     mkdir(cur_viz_out_path)
 
                     # save before viz
                     cur_crop_t = attack_t[b]
-                    pred_prefix = 'test_sample_%d_before' % (cur_batch_i[b])
+                    # pred_prefix = 'test_sample_%d_before' % (cur_batch_i[b])
+                    pred_prefix = scene_name + '_before'
                     pred_out_path = os.path.join(cur_viz_out_path, pred_prefix)
                     viz_optim_results(pred_out_path, scene_graph, map_idx, map_env, model,
                                         init_future_pred, planner_name, cur_attack_agt,
@@ -517,7 +528,8 @@ def run_one_epoch(data_loader, batch_size, model, map_env, device, out_path, los
                                         ow_gt=init_traj)
 
                     # save after optimization viz
-                    pred_prefix = 'test_sample_%d_after' % (cur_batch_i[b])
+                    # pred_prefix = 'test_sample_%d_after' % (cur_batch_i[b])
+                    pred_prefix = scene_name + '_after'
                     pred_out_path = os.path.join(cur_viz_out_path, pred_prefix)
                     viz_optim_results(pred_out_path, scene_graph, map_idx, map_env, model,
                                         final_result_traj, planner_name, cur_attack_agt, cur_crop_t,
@@ -526,7 +538,8 @@ def run_one_epoch(data_loader, batch_size, model, map_env, device, out_path, los
                                         ow_gt=final_decoder_out['future_pred'].clone().detach()) # show our internal pred of planner as "gt" since final_result_traj is actual planner traj
 
                     if adv_succeeded[b]:
-                        pred_prefix = 'test_sample_%d_sol' % (cur_batch_i[b])
+                        # pred_prefix = 'test_sample_%d_sol' % (cur_batch_i[b])
+                        pred_prefix = scene_name + '_sol'
                         pred_out_path = os.path.join(cur_viz_out_path, pred_prefix)
                         viz_optim_results(pred_out_path, sol_scene_graph, sol_map_idx, map_env, model,
                                         sol_result_traj, planner_name, cur_attack_agt, cur_crop_t,
@@ -583,7 +596,8 @@ def main():
                             seq_interval=cfg.seq_interval,
                             randomize_val=True,
                             val_size=cfg.val_size,
-                            reduce_cats=cfg.reduce_cats
+                            reduce_cats=cfg.reduce_cats,
+                            use_challenge_splits=cfg.use_challenge_splits
                             )
 
     # create loaders    
@@ -657,6 +671,7 @@ def main():
                   lr=cfg.lr,
                   viz=cfg.viz,
                   save=cfg.save,
+                  scene_names=test_dataset.scenes,
                   adv_attack_with=cfg.adv_attack_with)
 
 

@@ -275,6 +275,13 @@ def main():
     optimizer = optim.Adam(model.parameters(),
                            lr=cfg.lr,
                            weight_decay=cfg.weight_decay)
+    
+    ckpts_path = os.path.join(cfg.out, 'checkpoints')
+    mkdir(ckpts_path)
+
+    save_file = os.path.join(ckpts_path, '20future_model.pth')
+    save_state(save_file, model, optimizer)
+    input("saved")
 
     # load model weights & optimizer to start from, if given
     ckpt_epoch = 0

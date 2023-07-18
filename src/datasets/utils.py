@@ -28,6 +28,7 @@ def read_adv_scenes(scene_path):
         cur_scene['veh_att'] = torch.tensor(jdict['lw'])
         cur_scene['scene_past'] = torch.tensor(jdict['past'])
         cur_scene['scene_fut'] = torch.tensor(jdict['fut_adv'])
+        cur_scene['scene_fut_init'] = torch.tensor(jdict['fut_init'])
         if 'attack_t' in jdict:
             cur_scene['attack_t'] = jdict['attack_t']
         if 'sem' in jdict:

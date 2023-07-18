@@ -56,16 +56,8 @@ def viz_scenario(scene, map_env, out_path,
                 L=720,
                 W=720,
                 video=False):
-    viz_out_path = out_path + '/' + out_path.split('/')[-1]
 
-    viz_out_path_after  = out_path + '/after/' + out_path.split('/')[-1]
-    viz_out_path_before = out_path + '/before/' + out_path.split('/')[-1]
-
-    if not os.path.exists(out_path + '/after/'):
-        mkdir(out_path + '/after/')
-
-    if not os.path.exists(out_path + '/before/'):
-        mkdir(out_path + '/before/')
+    viz_out_path = out_path
 
     # print(viz_out_path)
     # viz_out_path = out_path + '/' + out_path
@@ -107,13 +99,10 @@ def viz_scenario(scene, map_env, out_path,
     bound_max = torch.amax(torch.abs(centroid_states)).item()# + 5.0
     bounds = [-bound_max, -bound_max, bound_max, bound_max]
 
-    scene_traj = torch.cat([scene_past, scene_fut], dim=1) # ivan- combine past and future scenes
-
-    print('scene_traj -----------------------------------------------------------')
-    # print(scene_traj)
-    print('scene_traj -----------------------------------------------------------'+'\n')
+    scene_traj = torch.cat([scene_past, ivan_scene_fut_init], dim=1) # ivan- combine past and future scenes
 
 
+    # DO IT FOR SAFE/ INITAL SCENE TRAJECTORY ---------------------------------------------------------
     NA, NT, _ = scene_traj.size()
 
     map_name = scene['map']
@@ -140,35 +129,50 @@ def viz_scenario(scene, map_env, out_path,
 
     
 
-    # nutils.ivan_out_map_json(map_rend, viz_out_path_after + '.json',
-    #                     crop_traj,
-    #                     crop_lw,
-    #                     viz_traj=True,
-    #                     traj_markers=[False]*NA,
-    #                     indiv=False
-    #                     )
+    nutils.ivan_out_map_json(map_rend, viz_out_path + '_safe.json',
+                        crop_traj,
+                        crop_lw,
+                        viz_traj=True,
+                        traj_markers=[False]*NA,
+                        indiv=False
+                        )
 
-    nutils.viz_map_crop(map_rend, viz_out_path_after + '.png',
+    nutils.viz_map_crop(map_rend, viz_out_path + '.png',
                         crop_traj,
                         crop_lw,
                         viz_traj=True,
                         traj_markers=[False]*NA, #ivan-initially this is false # change marker color 1 color to rainbow color
                         indiv=False
                         )
-    if video:
-        nutils.viz_map_crop_video(map_rend, viz_out_path_after + '_vid',
-                                crop_traj,
-                                crop_lw,
-                                viz_traj=False,
-                                indiv=False
-                                )
 
-    # Reapeat for initial traj as well
-    scene_traj_init = torch.cat([scene_past, ivan_scene_fut_init], dim=1)
+    nutils.ivan_viz_empty_map_crop(map_rend, viz_out_path + '_empty.png',
+                        crop_traj,
+                        crop_lw,
+                        viz_traj=True,
+                        traj_markers=[False]*NA, #ivan-initially this is false # change marker color 1 color to rainbow color
+                        indiv=False
+                        )
 
+    # REPEAT FOR STRIVE ADVERSARIAL COLLISION TRAJECTORY ---------------------------------------------------------
+
+    strive_traj = torch.cat([scene_past, scene_fut], dim=1) # ivan- combine past and future scenes
+
+    NA, NT, _ = strive_traj.size()
+
+    map_name = scene['map']
+    map_idx = map_env.map_list.index(map_name)
+    crop_h = torch.Tensor([[1.0, 0.0]])
+    crop_kin = torch.cat([crop_pos, crop_h], dim=1)
+
+    # render local map crop
+    map_rend = map_env.get_map_crop_pos(crop_kin,
+                                        torch.tensor([map_idx], dtype=torch.long),
+                                        bounds=bounds,
+                                        L=L,
+                                        W=W)[0]
     # transform trajectory into this cropped frame
     crop_traj, crop_lw = map_env.objs2crop(crop_kin[0],
-                                            scene_traj_init.reshape(NA*NT, 4),
+                                            strive_traj.reshape(NA*NT, 4),
                                             lw,
                                             None,
                                             bounds=bounds,
@@ -176,20 +180,18 @@ def viz_scenario(scene, map_env, out_path,
                                             W=W)
     crop_traj = crop_traj.reshape(NA, NT, 4)
 
-    nutils.viz_map_crop(map_rend, viz_out_path_before + '_before.png',
+
+    
+
+    nutils.ivan_out_map_json(map_rend, viz_out_path + '_strive.json',
                         crop_traj,
                         crop_lw,
                         viz_traj=True,
-                        traj_markers=[False]*NA, #ivan-initially this is false # change marker color 1 color to rainbow color
+                        traj_markers=[False]*NA,
                         indiv=False
                         )
-    if video:
-        nutils.viz_map_crop_video(map_rend, viz_out_path_before + '_before_vid',
-                                crop_traj,
-                                crop_lw,
-                                viz_traj=False,
-                                indiv=False
-                                )
+
+    # -------------------------------------------------------------------------------------------------------------
 
 
 
@@ -222,7 +224,8 @@ def viz_scenario_dir(cfg):
     for cur_scene in scenes:
         viz_scene_path = os.path.join(out_path, cur_scene['name'])
         print(viz_scene_path)
-        mkdir(viz_scene_path)
+
+        # mkdir(viz_scene_path)
 
         # print('1- json being loaded--------------------------------------------------------------')
 
