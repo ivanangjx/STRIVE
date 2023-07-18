@@ -599,15 +599,15 @@ def viz_scene_graph(scene_graph, map_idx, map_env, bidx, out_path,
     #out json
 
     
-    ivan_out_map_json(map_crop.cpu(), out_path + '.png',
-                    crop_objs.cpu(),
-                    crop_lw.cpu(),
-                    gt_kin=gt_crop_objs,
-                    viz_traj=viz_traj,
-                    indiv=False,
-                    color_traj=traj_color_val,
-                    color_traj_bounds=traj_color_bounds,
-                    car_colors=car_colors)
+    # ivan_out_map_json(map_crop.cpu(), out_path + '.png',
+    #                 crop_objs.cpu(),
+    #                 crop_lw.cpu(),
+    #                 gt_kin=gt_crop_objs,
+    #                 viz_traj=viz_traj,
+    #                 indiv=False,
+    #                 color_traj=traj_color_val,
+    #                 color_traj_bounds=traj_color_bounds,
+    #                 car_colors=car_colors)
 
     # viz image
     viz_map_crop(map_crop.cpu(), out_path + '.png',

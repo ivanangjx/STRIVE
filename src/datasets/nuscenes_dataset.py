@@ -194,7 +194,7 @@ class NuScenesDataset(Dataset):
             self.scenes, self.pred_challenge_scenes = self.get_scenes()
 
             print(self.scenes)
-            print(self.pred_challenge_scenes)
+            # print(self.pred_challenge_scenes)
 
             # maps {scene_name -> map_name}
             self.scene2map = self.get_scene2map()
