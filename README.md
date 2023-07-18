@@ -4,7 +4,7 @@
 
 ![STRIVE Teaser](strive_teaser.png)
 
-## Environment Setup
+## Environment Setup1
 > Note: This codebase has been tested primarily on Ubuntu 18.04 with Python 3.6, PyTorch 1.9, and CUDA 11.1.
 
 * Create a virtual environment with `python3 -m venv strive_env` and activate it `source strive_env/bin/activate`. 
