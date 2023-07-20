@@ -57,10 +57,12 @@ def viz_scenario(scene, map_env, out_path,
                 W=720,
                 video=False):
 
-    viz_out_path = out_path
-
+    # viz_out_path = out_path
+    # print(out_path)
+    mkdir(out_path)
+    viz_out_path = out_path + '/' + out_path.split('/')[-1]
     # print(viz_out_path)
-    # viz_out_path = out_path + '/' + out_path
+
 
     scene_past = scene['scene_past'][:,:,:4]
 
@@ -137,7 +139,7 @@ def viz_scenario(scene, map_env, out_path,
                         indiv=False
                         )
 
-    nutils.viz_map_crop(map_rend, viz_out_path + '.png',
+    nutils.viz_map_crop(map_rend, viz_out_path + '_safe.png',
                         crop_traj,
                         crop_lw,
                         viz_traj=True,
@@ -180,7 +182,13 @@ def viz_scenario(scene, map_env, out_path,
                                             W=W)
     crop_traj = crop_traj.reshape(NA, NT, 4)
 
-
+    nutils.viz_map_crop(map_rend, viz_out_path + '_strive.png',
+                        crop_traj,
+                        crop_lw,
+                        viz_traj=True,
+                        traj_markers=[False]*NA, #ivan-initially this is false # change marker color 1 color to rainbow color
+                        indiv=False
+                        )
     
 
     nutils.ivan_out_map_json(map_rend, viz_out_path + '_strive.json',

@@ -718,7 +718,6 @@ def viz_map_crop(x, out_path, car_kin=None, car_lw=None, gt_kin=None, viz_traj=F
                             traj_markers=traj_markers,
                             traj_markersize=traj_markersize)
 
-
     style_ax()
     plt.xlim(0, x.shape[2])
     plt.ylim(0, x.shape[1])
@@ -737,6 +736,8 @@ def ivan_out_map_json(x, out_path, car_kin=None, car_lw=None, gt_kin=None, viz_t
     :param car_kin: kinematics (NA x T x 4) or (NA x NS x T x 4)
     :param car_lw: attributes length, width (NA x 2)
     '''
+
+    print(car_lw)
 
     return_list = []
 
@@ -758,15 +759,31 @@ def ivan_out_map_json(x, out_path, car_kin=None, car_lw=None, gt_kin=None, viz_t
 
     # print(end_list)
 
-
     # for i in return_list:
     #     print(i)
     #     print('')
 
+    car_lw_list = car_lw.tolist()
+
     print('Writing Json file >>> ' + out_path) # out path is already json name
 
     f = open(out_path, "w")
-    f.write("{\n")
+    f.write("{\n") # starting bracket
+
+
+    # LW to json
+    f.write("    \"" + 'lw' + "\"" + ":"  + "\n")
+    f.write("    " + "[" + "\n")
+
+    for k in range(len(car_lw_list)):
+        if(k < len(car_lw_list)-1):
+            f.write("       " + "[ " + str(car_lw_list[k][0]) + " , " + str(car_lw_list[k][1]) + " ]" +  " ,\n")
+        else:
+            f.write("       " + "[ " + str(car_lw_list[k][0]) + " , " + str(car_lw_list[k][1]) + " ]" +  " \n")
+
+    f.write("    ],\n")
+    f.write("\n")
+
 
     for i in range(len(return_list)):
         index = str(i)
